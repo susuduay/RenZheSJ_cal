@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>忍者招募升星性价比计算器</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  :root {
+    --brand-50: #eff6ff;
+    --brand-100: #dbeafe;
+    --brand-200: #bfdbfe;
+    --brand-300: #93c5fd;
+    --brand-400: #60a5fa;
+    --brand-500: #3b82f6;
+    --brand-600: #2563eb;
+    --brand-700: #1d4ed8;
+    --brand-800: #1e40af;
+    --brand-900: #1e3a8a;
+    --gold-400: #fbbf24;
+    --gold-500: #f59e0b;
+    --purple-400: #c084fc;
+    --purple-500: #a855f7;
+    --blue-400: #60a5fa;
+    --blue-500: #3b82f6;
+    --green-400: #34d399;
+    --green-500: #10b981;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Custom select arrow */
+  .custom-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    padding-right: 36px;
+  }
+
+  /* Input styling */
+  .calc-input {
+    background: var(--brand-50);
+    border: 1px solid var(--brand-300);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  .calc-input:focus {
+    border-color: var(--brand-500);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+
+  /* KPI cards left border colors */
+  .kpi-blue   { border-left: 4px solid var(--brand-600); }
+  .kpi-gold   { border-left: 4px solid var(--gold-500); }
+  .kpi-green  { border-left: 4px solid var(--green-400); }
+  .kpi-purple { border-left: 4px solid var(--purple-500); }
+
+  /* Table styles */
+  .data-table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    background: #fff;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .data-table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--brand-600);
+    color: #fff;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 2;
+  }
+  .data-table thead th.num-col {
+    text-align: right;
+  }
+  .data-table tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .data-table tbody td.num-col {
+    text-align: right;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  }
+  .data-table tbody tr:hover td {
+    background: var(--brand-50);
+  }
+
+  /* Grade group header row */
+  .grade-s { background: rgba(245,158,11,0.08); border-left: 4px solid var(--gold-500); }
+  .grade-a { background: rgba(168,85,247,0.08); border-left: 4px solid var(--purple-500); }
+  .grade-b { background: rgba(59,130,246,0.08); border-left: 4px solid var(--blue-500); }
+  .grade-c { background: rgba(52,211,153,0.08); border-left: 4px solid var(--green-400); }
+  .grade-header td {
+    font-weight: 700;
+    padding: 8px 12px !important;
+  }
+
+  /* Increment row */
+  .increment-row {
+    background: rgba(251,191,36,0.04) !important;
+    border-bottom: 1px dashed var(--gold-400) !important;
+  }
+  .increment-row td {
+    color: #d97706 !important;
+    font-size: 12px;
+    padding: 5px 12px !important;
+  }
+
+  /* optgroup styling */
+  optgroup {
+    font-weight: 700;
+    font-style: normal;
+  }
+  optgroup option {
+    font-weight: 400;
+    padding: 4px 8px;
+  }
+
+  .mono { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
+</style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-[1100px] mx-auto px-4 py-8">
+
+  <!-- Header -->
+  <div class="flex items-center gap-3 mb-8">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:var(--brand-600)">
+      <i data-lucide="swords" class="w-5 h-5 text-white"></i>
+    </div>
+    <div>
+      <h1 class="text-xl font-bold" style="color:var(--brand-800)">忍者招募升星性价比计算器</h1>
+      <p class="text-xs text-slate-400">基于最新 Excel 数据 · 含百分比加成战力 &amp; 忍魂战力</p>
+    </div>
+  </div>
+
+  <!-- ===== Module 1: Calculator ===== -->
+  <section class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+    <h2 class="text-base font-bold mb-4 flex items-center gap-2" style="color:var(--brand-700)">
+      <i data-lucide="calculator" class="w-4 h-4"></i>
+      忍者收集属性
+    </h2>
+
+    <!-- Controls row -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+      <!-- 1. Attribute select -->
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">属性</label>
+        <select id="attrSelect" class="calc-input custom-select" onchange="onCalc()">
+          <option value="atk" selected>攻击</option>
+          <option value="hp">生命</option>
+          <option value="def">防御</option>
+        </select>
+      </div>
+      <!-- 2. Category select -->
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">类别</label>
+        <select id="catSelect" class="calc-input custom-select" onchange="onCategoryChange()">
+          <optgroup label="S级">
+            <option value="S招募" data-pct="4.4" data-n="2550" data-o="60" data-p="100">S招募 (4.4%)</option>
+            <option value="S4星" data-pct="5.9" data-n="2550" data-o="60" data-p="100">S4星 (5.9%)</option>
+            <option value="S5星" data-pct="7.4" data-n="5090" data-o="60" data-p="200">S5星 (7.4%)</option>
+          </optgroup>
+          <optgroup label="S级升星增量">
+            <option value="S招募→S4星" data-mode="increment" data-pct="1.5" data-q="8550">↪ 招募 → 4星 (+1.5%)</option>
+            <option value="S4星→S5星" data-mode="increment" data-pct="1.5" data-q="17090">↪ 4星 → 5星 (+1.5%)</option>
+          </optgroup>
+          <optgroup label="A级">
+            <option value="A招募" data-pct="1.5" data-n="670" data-o="40" data-p="40">A招募 (1.5%)</option>
+            <option value="A3星" data-pct="2.7" data-n="1030" data-o="40" data-p="60">A3星 (2.7%)</option>
+            <option value="A4星" data-pct="3.5" data-n="1700" data-o="40" data-p="100">A4星 (3.5%)</option>
+            <option value="A5星" data-pct="4.4" data-n="3390" data-o="40" data-p="200">A5星 (4.4%)</option>
+          </optgroup>
+          <optgroup label="A级升星增量">
+            <option value="A招募→A3星" data-mode="increment" data-pct="1.2" data-q="3430">↪ 招募 → 3星 (+1.2%)</option>
+            <option value="A3星→A4星" data-mode="increment" data-pct="0.8" data-q="5700">↪ 3星 → 4星 (+0.8%)</option>
+            <option value="A4星→A5星" data-mode="increment" data-pct="0.9" data-q="11390">↪ 4星 → 5星 (+0.9%)</option>
+          </optgroup>
+          <optgroup label="B级">
+            <option value="B招募" data-pct="1.0" data-n="330" data-o="20" data-p="40">B招募 (1.0%)</option>
+            <option value="B3星" data-pct="1.8" data-n="510" data-o="20" data-p="60">B3星 (1.8%)</option>
+            <option value="B4星" data-pct="2.4" data-n="850" data-o="20" data-p="100">B4星 (2.4%)</option>
+            <option value="B5星" data-pct="3.0" data-n="1700" data-o="20" data-p="200">B5星 (3.0%)</option>
+          </optgroup>
+          <optgroup label="B级升星增量">
+            <option value="B招募→B3星" data-mode="increment" data-pct="0.8" data-q="1710">↪ 招募 → 3星 (+0.8%)</option>
+            <option value="B3星→B4星" data-mode="increment" data-pct="0.6" data-q="2850">↪ 3星 → 4星 (+0.6%)</option>
+            <option value="B4星→B5星" data-mode="increment" data-pct="0.6" data-q="5700">↪ 4星 → 5星 (+0.6%)</option>
+          </optgroup>
+          <optgroup label="C级">
+            <option value="C招募" data-pct="0.2" data-n="40" data-o="10" data-p="10">C招募 (0.2%)</option>
+            <option value="C2星" data-pct="0.5" data-n="130" data-o="10" data-p="30">C2星 (0.5%)</option>
+            <option value="C3星" data-pct="0.9" data-n="260" data-o="10" data-p="60">C3星 (0.9%)</option>
+            <option value="C4星" data-pct="1.2" data-n="420" data-o="10" data-p="100">C4星 (1.2%)</option>
+            <option value="C5星" data-pct="1.5" data-n="850" data-o="10" data-p="200">C5星 (1.5%)</option>
+          </optgroup>
+          <optgroup label="C级升星增量">
+            <option value="C招募→C2星" data-mode="increment" data-pct="0.3" data-q="430">↪ 招募 → 2星 (+0.3%)</option>
+            <option value="C2星→C3星" data-mode="increment" data-pct="0.4" data-q="860">↪ 2星 → 3星 (+0.4%)</option>
+            <option value="C3星→C4星" data-mode="increment" data-pct="0.3" data-q="1420">↪ 3星 → 4星 (+0.3%)</option>
+            <option value="C4星→C5星" data-mode="increment" data-pct="0.3" data-q="2850">↪ 4星 → 5星 (+0.3%)</option>
+          </optgroup>
+        </select>
+      </div>
+      <!-- 3. Read-only percentage -->
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">忍者收集百分比</label>
+        <input id="pctDisplay" type="text" class="calc-input bg-slate-50 border-slate-200 text-slate-600 cursor-not-allowed" value="4.4%" readonly tabindex="-1">
+      </div>
+      <!-- 4. Coupon price -->
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">点券价格</label>
+        <input id="couponPrice" type="number" class="calc-input" value="0" min="0" placeholder="0" oninput="onCalc()">
+      </div>
+      <!-- 5. Gold price -->
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">金币价格</label>
+        <input id="goldPrice" type="number" class="calc-input" value="0" min="0" placeholder="0" oninput="onCalc()">
+      </div>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-white rounded-xl p-4 shadow-sm kpi-blue">
+        <div class="text-xs text-slate-400 mb-1">百分比加成战力</div>
+        <div id="kpiG" class="text-lg font-bold mono" style="color:var(--brand-700)">0</div>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm kpi-gold">
+        <div class="text-xs text-slate-400 mb-1">忍魂战力</div>
+        <div id="kpiH" class="text-lg font-bold mono" style="color:#b45309">0</div>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm kpi-green">
+        <div class="text-xs text-slate-400 mb-1">总战力</div>
+        <div id="kpiI" class="text-lg font-bold mono" style="color:#059669">0</div>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm kpi-purple">
+        <div class="text-xs text-slate-400 mb-1">性价比</div>
+        <div id="kpiJ" class="text-lg font-bold mono" style="color:#7c3aed">0</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Module 2: Soul Table ===== -->
+  <section class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+    <h2 class="text-base font-bold mb-1 flex items-center gap-2" style="color:var(--brand-700)">
+      <i data-lucide="flame" class="w-4 h-4"></i>
+      忍者忍魂获取数量
+    </h2>
+    <p class="text-xs text-yellow-600 mb-4">忍魂战力等于忍魂数量 &times; 0.593</p>
+
+    <div class="data-table-wrap">
+      <table class="data-table" id="soulTable">
+        <thead>
+          <tr>
+            <th>操作(M)</th>
+            <th class="num-col">忍魂数量(N)</th>
+            <th class="num-col">单碎片忍魂(O)</th>
+            <th class="num-col">需要碎片数(P)</th>
+            <th class="num-col">招募或升星获得忍魂(Q=N+O&times;P)</th>
+            <th class="num-col">累计获得忍魂数量(R)</th>
+            <th class="num-col">忍魂战力(S=Q&times;0.593)</th>
+          </tr>
+        </thead>
+        <tbody id="soulTbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Footer note -->
+  <p class="text-xs text-slate-400 leading-relaxed text-center px-4 pb-4">
+    性价比 = 总战力 / (点券&times;2) + 总战力 / 金币 &nbsp;&middot;&nbsp; 百分比加成战力 = 每1%带来战力 &times; 100 &times; 收集百分比 &nbsp;&middot;&nbsp; 忍魂战力 = 招募升星获得忍魂 &times; 0.593
+  </p>
+
+</div>
+
+<script>
+// ===== DATA =====
+const ATTR_MAP = {
+  atk: { label: '攻击', base: 9625, display: '962,500' },
+  hp:  { label: '生命', base: 7530, display: '753,000' },
+  def: { label: '防御', base: 7192.5, display: '719,250' }
+};
+
+const SOUL_RATE = 0.593;
+
+const GRADES = {
+  S: {
+    cssClass: 'grade-s',
+    label: 'S级',
+    rows: [
+      { name: 'S招募', n: 2550, o: 60, p: 100 },
+      { name: 'S4星',  n: 2550, o: 60, p: 100 },
+      { name: 'S5星',  n: 5090, o: 60, p: 200 }
+    ]
+  },
+  A: {
+    cssClass: 'grade-a',
+    label: 'A级',
+    rows: [
+      { name: 'A招募', n: 670,  o: 40, p: 40 },
+      { name: 'A3星',  n: 1030, o: 40, p: 60 },
+      { name: 'A4星',  n: 1700, o: 40, p: 100 },
+      { name: 'A5星',  n: 3390, o: 40, p: 200 }
+    ]
+  },
+  B: {
+    cssClass: 'grade-b',
+    label: 'B级',
+    rows: [
+      { name: 'B招募', n: 330,  o: 20, p: 40 },
+      { name: 'B3星',  n: 510,  o: 20, p: 60 },
+      { name: 'B4星',  n: 850,  o: 20, p: 100 },
+      { name: 'B5星',  n: 1700, o: 20, p: 200 }
+    ]
+  },
+  C: {
+    cssClass: 'grade-c',
+    label: 'C级',
+    rows: [
+      { name: 'C招募', n: 40,  o: 10, p: 10 },
+      { name: 'C2星',  n: 130, o: 10, p: 30 },
+      { name: 'C3星',  n: 260, o: 10, p: 60 },
+      { name: 'C4星',  n: 420, o: 10, p: 100 },
+      { name: 'C5星',  n: 850, o: 10, p: 200 }
+    ]
+  }
+};
+
+// ===== FORMAT HELPERS =====
+function fmtNum(n) {
+  return n.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+}
+
+function fmtInt(n) {
+  return Math.round(n).toLocaleString('zh-CN');
+}
+
+// ===== BUILD SOUL TABLE =====
+function buildSoulTable() {
+  const tbody = document.getElementById('soulTbody');
+  let html = '';
+
+  for (const [gradeKey, grade] of Object.entries(GRADES)) {
+    // Grade group header
+    html += `<tr class="${grade.cssClass} grade-header"><td colspan="7">${grade.label}</td></tr>`;
+
+    let cumR = 0;
+    for (let i = 0; i < grade.rows.length; i++) {
+      const row = grade.rows[i];
+      const q = row.n + row.o * row.p;
+      cumR += q;
+      const s = q * SOUL_RATE;
+
+      // Main data row
+      html += `<tr>
+        <td>${row.name}</td>
+        <td class="num-col">${fmtInt(row.n)}</td>
+        <td class="num-col">${row.o}</td>
+        <td class="num-col">${fmtInt(row.p)}</td>
+        <td class="num-col">${fmtNum(q)}</td>
+        <td class="num-col">${fmtInt(cumR)}</td>
+        <td class="num-col">${fmtNum(s)}</td>
+      </tr>`;
+    }
+  }
+
+  tbody.innerHTML = html;
+}
+
+// ===== CALCULATOR LOGIC =====
+function onCategoryChange() {
+  const sel = document.getElementById('catSelect');
+  const opt = sel.options[sel.selectedIndex];
+  const pct = opt.getAttribute('data-pct');
+  const isInc = opt.getAttribute('data-mode') === 'increment';
+  document.getElementById('pctDisplay').value = (isInc ? '+' : '') + pct + '%';
+  onCalc();
+}
+
+function onCalc() {
+  // Get attribute base value
+  const attrKey = document.getElementById('attrSelect').value;
+  const B = ATTR_MAP[attrKey].base; // B column: per-1% power
+
+  // Get category data
+  const sel = document.getElementById('catSelect');
+  const opt = sel.options[sel.selectedIndex];
+  const isInc = opt.getAttribute('data-mode') === 'increment';
+  const D = parseFloat(opt.getAttribute('data-pct')); // D: percentage value
+  const E = parseFloat(document.getElementById('couponPrice').value) || 0; // coupon
+  const F = parseFloat(document.getElementById('goldPrice').value) || 0;   // gold
+
+  let G, Q, H, I;
+
+  if (isInc) {
+    // Increment mode: G = B * D(增量百分比), Q directly from data-q
+    G = B * D;
+    Q = parseInt(opt.getAttribute('data-q'));
+    H = Q * SOUL_RATE;
+    I = G + H;
+  } else {
+    // Normal mode: G = B * D, Q = N + O * P
+    const N = parseInt(opt.getAttribute('data-n'));
+    const O = parseInt(opt.getAttribute('data-o'));
+    const P = parseInt(opt.getAttribute('data-p'));
+    G = B * D;
+    Q = N + O * P;
+    H = Q * SOUL_RATE;
+    I = G + H;
+  }
+
+  // J: cost performance
+  let J = 0;
+  if (D > 0) {
+    const part1 = E > 0 ? I / (E * 2) : 0;
+    const part2 = F > 0 ? I / F : 0;
+    J = part1 + part2;
+  } else {
+    const part1 = E > 0 ? H / (E * 2) : 0;
+    const part2 = F > 0 ? H / F : 0;
+    J = part1 + part2;
+  }
+
+  // Display results
+  document.getElementById('kpiG').textContent = fmtNum(G);
+  document.getElementById('kpiH').textContent = fmtNum(H);
+  document.getElementById('kpiI').textContent = fmtNum(I);
+  document.getElementById('kpiJ').textContent = fmtNum(J);
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+  buildSoulTable();
+  onCategoryChange();
+});
+</script>
+</body>
+</html>
